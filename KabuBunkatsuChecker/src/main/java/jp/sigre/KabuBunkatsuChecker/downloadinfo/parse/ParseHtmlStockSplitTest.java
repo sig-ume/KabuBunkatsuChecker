@@ -14,9 +14,9 @@ public class ParseHtmlStockSplitTest {
 
 	ParseHtmlStockSplit target = new ParseHtmlStockSplit();
 
-	String strFolder = "C:\\pleiades\\workspace\\KabuBunkatsuChecker\\target";
-	String strNoWrite = "C:\\pleiades\\workspace\\KabuBunkatsuChecker\\target_no_write";
-	String strPath = "C:\\pleiades\\workspace\\KabuBunkatsuChecker\\target\\2017-06-06.csv";
+	String strFolder = "C:\\Users\\sigre\\git\\KabuBunkatsuChecker\\KabuBunkatsuChecker\\target";
+	String strNoWrite = "C:\\Users\\sigre\\git\\KabuBunkatsuChecker\\KabuBunkatsuChecker\\target_no_write";
+	String strPath = "C:\\Users\\sigre\\git\\KabuBunkatsuChecker\\KabuBunkatsuChecker\\target\\2017-06-06.csv";
 	String strDate = "2017-06-06";
 	@Before
 	public void setUp() throws Exception {
@@ -156,7 +156,7 @@ public class ParseHtmlStockSplitTest {
 		@SuppressWarnings("unused")
 		String result = target.getUpdateDate("KoushinDate_Bunkatsu");
 
-		assertThat(result, is("2017/05/02"));
+		assertThat(result, is("2017/09/29"));
 
 	}
 
@@ -165,7 +165,7 @@ public class ParseHtmlStockSplitTest {
 		@SuppressWarnings("unused")
 		String result = target.getUpdateDate("KoushinDate_Gappei");
 
-		assertThat(result, is("2017/04/28"));
+		assertThat(result, is("2017/09/29"));
 
 	}
 

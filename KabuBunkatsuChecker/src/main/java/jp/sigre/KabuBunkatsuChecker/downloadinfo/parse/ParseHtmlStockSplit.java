@@ -174,7 +174,7 @@ public class ParseHtmlStockSplit {
 		SplitMergeInfo info = new SplitMergeInfo();
 		//boolean halfFlag = true;
 
-		document = Jsoup.connect(url).get();
+		document = Jsoup.connect(url).ignoreContentType(true).get();
 
 		//System.out.println(document.html());
 
@@ -250,7 +250,7 @@ public class ParseHtmlStockSplit {
 		SplitMergeInfo info = new SplitMergeInfo();
 		boolean halfFlag = true;
 
-		document = Jsoup.connect(url).get();
+		document = Jsoup.connect(url).ignoreContentType(true).get();
 
 		//System.out.println(document.html());
 
@@ -367,7 +367,7 @@ public class ParseHtmlStockSplit {
 		String strUpdate = "";
 		Date dateUpdate = null;
 
-		Document document = Jsoup.connect("http://kabu.com/process/LastUpdate.js").get();
+		Document document = Jsoup.connect("http://kabu.com/process/LastUpdate.js").ignoreContentType(true).get();
 
 		for (String line : document.html().split("; ")) {
 			if (line.startsWith(name)) {
