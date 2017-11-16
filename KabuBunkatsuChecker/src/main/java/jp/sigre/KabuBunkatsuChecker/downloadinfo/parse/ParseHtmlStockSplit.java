@@ -220,7 +220,7 @@ public class ParseHtmlStockSplit {
 
 		m = p.matcher(strSite);
 		while (m.find()){
-			groupList.get(count).setIntWariateRate1(m.group(1));
+			groupList.get(count).setIntWariateRate2(m.group(1));
 			count += 1;
 		}
 
@@ -231,7 +231,7 @@ public class ParseHtmlStockSplit {
 
 		m = p.matcher(strSite);
 		while (m.find()){
-			groupList.get(count).setIntWariateRate2(m.group(1));
+			groupList.get(count).setIntWariateRate1(m.group(1));
 			count += 1;
 		}
 		//
