@@ -16,7 +16,7 @@ public class ParseHtmlStockSplitTest {
 
 	String strFolder = "C:\\Users\\sigre\\git\\KabuBunkatsuChecker\\KabuBunkatsuChecker\\target";
 	String strNoWrite = "C:\\Users\\sigre\\git\\KabuBunkatsuChecker\\KabuBunkatsuChecker\\target_no_write";
-	String strPath = "C:\\Users\\sigre\\git\\KabuBunkatsuChecker\\KabuBunkatsuChecker\\target\\2017-06-06.csv";
+	String strPath = "C:\\Users\\sigre\\git\\KabuBunkatsuChecker\\KabuBunkatsuChecker\\target\\2017-06-06";
 	String strDate = "2017-06-06";
 	@Before
 	public void setUp() throws Exception {
@@ -112,6 +112,7 @@ public class ParseHtmlStockSplitTest {
 
 		assertThat(result.size(), is(not(0)));
 		for (SplitMergeInfo info : result ) {
+			System.out.println("Merge: " + info);
 			if (!target.checkData(info)) System.out.println(info);
 			assertThat(target.checkData(info), is(true));
 		}
@@ -123,6 +124,7 @@ public class ParseHtmlStockSplitTest {
 
 		assertThat(result.size(), is(not(0)));
 		for (SplitMergeInfo info : result ) {
+			System.out.println("Split: " + info);
 			assertThat(target.checkData(info), is(true));
 		}
 	}
@@ -137,10 +139,14 @@ public class ParseHtmlStockSplitTest {
 		}
 	}
 
-	@Test(expected = IndexOutOfBoundsException.class)
+	@Test //(expected = IndexOutOfBoundsException.class)
 	public void getSplitDatatest_異常系1() throws Exception {
 		List<SplitMergeInfo> result = target.getSplitData("http://kabu.com/process/gensi.js");
 
+		assertThat(result.size(), is(not(0)));
+		for (SplitMergeInfo info : result ) {
+			assertThat(target.checkData(info), is(false));
+		}
 	}
 
 
@@ -153,19 +159,17 @@ public class ParseHtmlStockSplitTest {
 
 	@Test
 	public void getUpdateDatetest_正常系1() throws Exception {
-		@SuppressWarnings("unused")
 		String result = target.getUpdateDate("KoushinDate_Bunkatsu");
 
-		assertThat(result, is("2017/09/29"));
+		assertThat(result, is("2017/11/17"));
 
 	}
 
 	@Test
 	public void getUpdateDatetest_正常系2() throws Exception {
-		@SuppressWarnings("unused")
 		String result = target.getUpdateDate("KoushinDate_Gappei");
 
-		assertThat(result, is("2017/09/29"));
+		assertThat(result, is("2017/11/17"));
 
 	}
 
@@ -184,3 +188,4 @@ public class ParseHtmlStockSplitTest {
 
 	}
 }
+

@@ -1,6 +1,3 @@
-/**
- *
- */
 package jp.sigre.KabuBunkatsuChecker.downloadinfo.parse;
 
 import java.io.File;
@@ -29,13 +26,15 @@ import au.com.bytecode.opencsv.CSVWriter;
  */
 public class ParseHtmlStockSplit {
 
-	final int NORMAL_END = 0;
-	final int ERROR_SAMEFILENAME = 1;
-	final int ERROR_NOFOLDEREXIST = 2;
-	final int ERROR_IOERROR = 3;
-	final int ERROR_WEBCONNECT = 4;
-	final int ERROR_OTHER = 5;
-	final int ERROR_DATAINCOLLECT = 6;
+	public final static int NORMAL_END = 0;
+	public final static int ERROR_SAMEFILENAME = 1;
+	public final static int ERROR_NOFOLDEREXIST = 2;
+	public final static int ERROR_IOERROR = 3;
+	public final static int ERROR_WEBCONNECT = 4;
+	public final static int ERROR_OTHER = 5;
+	public final static int ERROR_DATAINCOLLECT = 6;
+	public final static int NO_UPDATE = 7;
+	public final static int ERROR_SQL = 8;
 
 	/**
 	 *
@@ -50,8 +49,8 @@ public class ParseHtmlStockSplit {
 		if (!folder.exists()) return ERROR_NOFOLDEREXIST;
 
 		String outputFilePath = strFolder;
-		if (!strFolder.endsWith("\\")) outputFilePath += "\\";
-		outputFilePath += strDate + ".csv";
+		if (!strFolder.endsWith(File.separator)) outputFilePath += File.separator;
+		outputFilePath += strDate;
 
 		File file = new File(outputFilePath);
 		if (file.exists()) return ERROR_SAMEFILENAME;
@@ -84,8 +83,8 @@ public class ParseHtmlStockSplit {
 		if (!folder.exists()) return ERROR_NOFOLDEREXIST;
 
 		String outputFilePath = strFolder;
-		if (!strFolder.endsWith("\\")) outputFilePath += "\\";
-		outputFilePath += strDate + ".csv";
+		if (!strFolder.endsWith(File.separator)) outputFilePath += File.separator;
+		outputFilePath += strDate;
 
 		File file = new File(outputFilePath);
 		if (file.exists()) return ERROR_SAMEFILENAME;
@@ -166,7 +165,7 @@ public class ParseHtmlStockSplit {
 		return str;
 	}
 
-	public List<SplitMergeInfo> getMergeData(String url)
+	List<SplitMergeInfo> getMergeData(String url)
 			throws UnknownHostException, IOException, NoDataException, Exception{
 
 		Document document = null;
@@ -176,18 +175,53 @@ public class ParseHtmlStockSplit {
 
 		document = Jsoup.connect(url).ignoreContentType(true).get();
 
-		//System.out.println(document.html());
-
 		String strSite = document.html().replace("\n", "");
+
+		groupList = getMergeBase(strSite);
+
+		if (groupList.size()==0) throw new NoDataException();
+
+		List<String> lastDateList = getMergeLastDateList(strSite);
+		List<String> aRatioList = getARatioList(strSite);
+		List<String> bRatioList = getBRatioList(strSite);
+
+		int lstDateCount = lastDateList.size();
+		int aRatioCount = aRatioList.size();
+		int bRatioCount = bRatioList.size();
+		int ratioCount = aRatioCount < bRatioCount ? aRatioCount : bRatioCount;
+		ratioCount = ratioCount < lstDateCount ? ratioCount : lstDateCount;
+
+		int count = groupList.size() > ratioCount ? ratioCount : groupList.size();
+
+		int i;
+		for (i = 0; i < count; i++) {
+			SplitMergeInfo info1 = groupList.get(i);
+			String aRatio = aRatioList.get(i);
+			String bRatio = bRatioList.get(i);
+			String lstDate = lastDateList.get(i);
+			info1.setIntWariateRate2(bRatio);
+			info1.setIntWariateRate1(aRatio);
+			info1.setStrLastDate(lstDate);
+		}
+
+		for (; i < groupList.size(); i++) {
+			groupList.remove(i);
+		}
+
+		return groupList;
+	}
+
+	private List<SplitMergeInfo> getMergeBase(String strSite) {
+
+		List<SplitMergeInfo> groupList = new ArrayList<>();
 
 		String regex = "document.write\\(\\'\\s*<tr>\\s*\\\\\\s*<td>(.*?)</td>\\\\\\s*<td>(.*?)</td>.*?<td>(.*?)</td>.*?\\<td>'\\);";
 
-		//System.out.println(strSite);
 		Pattern p = Pattern.compile(regex);
 
 		Matcher m = p.matcher(strSite);
 		while (m.find()){
-			info = new SplitMergeInfo();
+			SplitMergeInfo info = new SplitMergeInfo();
 			info.setStrStartDate(m.group(1));
 			info.setStrStockCode(m.group(2));
 			info.setStrStockName(m.group(3));
@@ -197,74 +231,75 @@ public class ParseHtmlStockSplit {
 
 		}
 
-		if (groupList.size()==0) throw new NoDataException();
-
-		regex = "document.write\\(\\'</td>\\\\\\s*?<td>(.*?)</td>\\\\\\s*?</tr>\\'\\);";
-		p = Pattern.compile(regex);
-
-		//System.out.println(regex);
-		int count = 0;
-
-		m = p.matcher(strSite);
-		while (m.find()){
-			//			System.out.println("group:" + m.group());
-			//			System.out.println(m.group(1));
-			groupList.get(count).setStrLastDate(m.group(1));
-			count += 1;
-		}
-
-		regex = "BRatioW\\s=\\s&quot;(.*?)&quot;;";
-		p = Pattern.compile(regex);
-
-		count = 0;
-
-		m = p.matcher(strSite);
-		while (m.find()){
-			groupList.get(count).setIntWariateRate2(m.group(1));
-			count += 1;
-		}
-
-		regex = "ARatioW\\s=\\s&quot;(.*?)&quot;;";
-		p = Pattern.compile(regex);
-
-		count = 0;
-
-		m = p.matcher(strSite);
-		while (m.find()){
-			groupList.get(count).setIntWariateRate1(m.group(1));
-			count += 1;
-		}
-		//
-		//		for (SplitMergeInfo group : groupList) {
-		//			System.out.println(group.toString());
-		//		}
-
 		return groupList;
 	}
 
-	public List<SplitMergeInfo> getSplitData(String url)
-			throws UnknownHostException, IOException, NoDataException, Exception{
-		Document document = null;
-		//String url = "http://kabu.com/process/bunkatu.js";
-		List<SplitMergeInfo> groupList = new ArrayList<>();
-		SplitMergeInfo info = new SplitMergeInfo();
-		boolean halfFlag = true;
+	List<String> getMergeLastDateList(String strSite) {
 
-		document = Jsoup.connect(url).ignoreContentType(true).get();
+		List<String> result = new ArrayList<>();
 
-		//System.out.println(document.html());
-
-		String strSite = document.html().replace("\n", "");
-
-		String regex = "document.write\\(\\'.*?<td>(.*?)</td>.*?<td>(.*?)</td>.*?<td>(.*?)</td>.*?\\'\\);";
-
-		//System.out.println(strSite);
+		String regex = "document.write\\(\\'</td>\\\\\\s*?<td>(.*?)</td>\\\\\\s*?</tr>\\'\\);";
 		Pattern p = Pattern.compile(regex);
 
 		Matcher m = p.matcher(strSite);
 		while (m.find()){
-			//System.out.println("groupcount:" + m.groupCount());
-			//System.out.println("group1:" + m.group(1) + m.group(2) + m.group(3));
+			result.add(m.group(1));
+		}
+
+		return result;
+	}
+
+	List<SplitMergeInfo> getSplitData(String url)
+			throws UnknownHostException, IOException, NoDataException, Exception{
+		Document document = null;
+
+		boolean halfFlag = true;
+		String regex = "";
+
+		document = Jsoup.connect(url).ignoreContentType(true).get();
+
+		String strSite = document.html().replace("\n", "");
+
+		List<SplitMergeInfo> groupList = getSplitBase(strSite);
+
+		List<String> aRatioList = getARatioList(strSite);
+		List<String> bRatioList = getBRatioList(strSite);
+
+		int aRatioCount = aRatioList.size();
+		int bRatioCount = bRatioList.size();
+		int ratioCount = aRatioCount < bRatioCount ? aRatioCount : bRatioCount;
+
+		int count = groupList.size() > ratioCount ? ratioCount : groupList.size();
+
+		int i;
+		for (i = 0; i < count; i++) {
+			SplitMergeInfo info = groupList.get(i);
+			String aRatio = aRatioList.get(i);
+			String bRatio = bRatioList.get(i);
+			info.setIntWariateRate1(bRatio);
+			info.setIntWariateRate2(aRatio);
+		}
+
+		for (; i < groupList.size(); i++) {
+			groupList.remove(i);
+		}
+
+		return groupList;
+	}
+
+	private List<SplitMergeInfo> getSplitBase(String strSite) throws NoDataException {
+
+		List<SplitMergeInfo> groupList = new ArrayList<>();
+		SplitMergeInfo info = new SplitMergeInfo();
+		boolean halfFlag = true;
+
+		String regex = "document.write\\(\\'.*?<td>(.*?)</td>.*?<td>(.*?)</td>.*?<td>(.*?)</td>.*?\\'\\);";
+
+		Pattern p = Pattern.compile(regex);
+
+		Matcher m = p.matcher(strSite);
+		while (m.find()){
+
 			if (halfFlag) {
 				info = new SplitMergeInfo();
 				info.setStrWariateDate(m.group(1));
@@ -285,39 +320,41 @@ public class ParseHtmlStockSplit {
 
 		if (groupList.size()==0) throw new NoDataException();
 
-		regex = "BRatioW\\s=\\s&quot;(.*?)&quot;;";
-		p = Pattern.compile(regex);
-
-		//System.out.println(regex);
-		int count = 0;
-
-		m = p.matcher(strSite);
-		while (m.find()){
-			groupList.get(count).setIntWariateRate1(m.group(1));
-			count += 1;
-		}
-
-
-		regex = "ARatioW\\s=\\s&quot;(.*?)&quot;;";
-		p = Pattern.compile(regex);
-
-		//System.out.println(regex);
-		count = 0;
-
-		m = p.matcher(strSite);
-		while (m.find()){
-			groupList.get(count).setIntWariateRate2(m.group(1));
-			count += 1;
-		}
-
-		//		for (SplitMergeInfo group : groupList) {
-		//			System.out.println(group.toString());
-		//		}
-
 		return groupList;
 	}
 
-	public boolean checkData (SplitMergeInfo info) {
+	private List<String> getARatioList(String strSite) {
+
+		List<String> intList = new ArrayList<>();
+
+		String regex = "ARatioW\\s=\\s&quot;(.*?)&quot;;";
+		Pattern p = Pattern.compile(regex);
+
+		Matcher m = p.matcher(strSite);
+		while (m.find()){
+			intList.add(m.group(1));
+		}
+
+		return intList;
+
+	}
+
+	private List<String> getBRatioList(String strSite) {
+
+		List<String> intList = new ArrayList<>();
+
+		String regex = "BRatioW\\s=\\s&quot;(.*?)&quot;;";
+		Pattern p = Pattern.compile(regex);
+
+		Matcher m = p.matcher(strSite);
+		while (m.find()){
+			intList.add(m.group(1));
+		}
+
+		return intList;
+	}
+
+	boolean checkData (SplitMergeInfo info) {
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
 		if (info.getIsSplit()==0) {
@@ -334,12 +371,14 @@ public class ParseHtmlStockSplit {
 
 		try {
 			Date formatDate = null;
+			Date formatDate1 = null;
+			Date formatDate2 = null;
 			//割当日
 			if (info.getIsSplit()==1) formatDate = sdf.parse(info.strWariateDate);
 			//権利付き最終日
-			formatDate = sdf.parse(info.strLastDate);
+			formatDate1 = sdf.parse(info.strLastDate);
 			//効力発生日
-			formatDate = sdf.parse(info.strStartDate);
+			formatDate2 = sdf.parse(info.strStartDate);
 			//売却可能予定日
 			if (info.getIsSplit()==1) formatDate = sdf.parse(info.strSalableDate);
 			//銘柄コード
@@ -349,6 +388,10 @@ public class ParseHtmlStockSplit {
 			//割当比率2
 			Double.parseDouble(info.strWariateRate2);
 
+			//効力発生日は権利付き最終日より必ずあとになるはず
+			if (formatDate1.after(formatDate2)){
+				return false;
+			}
 		} catch (Exception e) {
 			return false;
 		}
